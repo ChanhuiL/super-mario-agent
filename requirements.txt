@@ -1,0 +1,8 @@
+torch>=2.0.0
+torchvision>=0.15.0
+numpy>=1.24.0
+gym>=0.26.0
+gym-super-mario-bros>=7.4.0
+nes-py>=8.2.0
+Pillow>=10.0.0
+

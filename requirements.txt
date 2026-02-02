@@ -1,7 +1,8 @@
-gym-super-mario-bros==7.4.0
-nes-py==8.2.1
-torch>=2.0.0
-torchvision>=0.15.0
+torch
+torchvision
+gymnasium
+git+https://github.com/Leirbag-gabrieL/gym-super-mario-bros-fixed.git
+git+https://github.com/Leirbag-gabrieL/nes-py-fixed.git
 numpy>=1.24.0
 opencv-python>=4.8.0
 tensorboard>=2.14.0

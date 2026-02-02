@@ -3,11 +3,11 @@ Environment wrappers for Super Mario Bros.
 Includes preprocessing, frame stacking, and action history tracking.
 """
 
-import gym
+import gymnasium as gym
 import numpy as np
 import cv2
 from collections import deque
-from gym.spaces import Box
+from gymnasium.spaces import Box
 
 
 class SkipFrame(gym.Wrapper):
@@ -23,11 +23,12 @@ class SkipFrame(gym.Wrapper):
         total_reward = 0.0
         done = False
         for _ in range(self._skip):
-            obs, reward, done, info = self.env.step(action)
+            obs, reward, terminated, truncated, info = self.env.step(action)
             total_reward += reward
+            done = terminated or truncated
             if done:
                 break
-        return obs, total_reward, done, info
+        return obs, total_reward, terminated, truncated, info
 
 
 class GrayScaleResize(gym.ObservationWrapper):
@@ -69,16 +70,16 @@ class FrameStack(gym.Wrapper):
         )
 
     def reset(self):
-        obs = self.env.reset()
+        obs, info = self.env.reset()
         # Fill the deque with the initial frame
         for _ in range(self.k):
             self.frames.append(obs)
         return self._get_obs()
 
     def step(self, action):
-        obs, reward, done, info = self.env.step(action)
+        obs, reward, terminated, truncated, info = self.env.step(action)
         self.frames.append(obs)
-        return self._get_obs(), reward, done, info
+        return self._get_obs(), reward, terminated, truncated, info
 
     def _get_obs(self):
         return np.array(self.frames, dtype=np.uint8)
@@ -96,7 +97,7 @@ class ActionHistoryWrapper(gym.Wrapper):
         self.action_history = deque(maxlen=k)
         
         # Modify observation space to be a Dict space
-        from gym.spaces import Dict
+        from gymnasium.spaces import Dict
         self.observation_space = Dict({
             'frames': env.observation_space,
             'action_history': Box(low=0, high=env.action_space.n-1, 
@@ -112,9 +113,9 @@ class ActionHistoryWrapper(gym.Wrapper):
         return self._get_obs(obs)
 
     def step(self, action):
-        obs, reward, done, info = self.env.step(action)
+        obs, reward, terminated, truncated, info = self.env.step(action)
         self.action_history.append(action)
-        return self._get_obs(obs), reward, done, info
+        return self._get_obs(obs), reward, terminated, truncated, info
 
     def _get_obs(self, frames):
         return {
@@ -123,7 +124,7 @@ class ActionHistoryWrapper(gym.Wrapper):
         }
 
 
-def create_mario_env(world=1, stage=1, version=0):
+def create_mario_env(world=1, stage=1, version='Vanilla'):
     """
     Create and configure the Super Mario Bros environment with all wrappers.
     
@@ -140,7 +141,7 @@ def create_mario_env(world=1, stage=1, version=0):
     from nes_py.wrappers import JoypadSpace
     
     # Create the base environment
-    env_name = f'SuperMarioBros-{world}-{stage}-v{version}'
+    env_name = f'SuperMarioBros-{world}-{stage}-{version}'
     env = gym_super_mario_bros.make(env_name)
     
     # Limit the action space to simple movements

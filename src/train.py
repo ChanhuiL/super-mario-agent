@@ -101,8 +101,8 @@ def train(
     
     # Initialize environment
     print("Initializing environment...")
-    env = create_mario_env(world=1, stage=1, version=0)
-    num_actions = env.action_space['frames'].n  # Access the base action space
+    env = create_mario_env(world=1, stage=1, version='Vanilla')
+    num_actions = env.action_space.n  # Access the base action space
     
     # Initialize agent
     print("Initializing agent...")
@@ -136,9 +136,11 @@ def train(
             action = agent.act(frames, action_history)
             
             # Step environment
-            next_obs, reward, done, info = env.step(action)
+            next_obs, reward, terminated, truncated, info = env.step(action)
             next_frames = next_obs['frames']
             next_action_history = next_obs['action_history']
+
+            done = terminated or truncated
             
             # Store transition
             agent.store_transition(

@@ -38,8 +38,8 @@ class MarioAgent:
         
         # Distributional RL parameters
         self.num_atoms = 51
-        self.v_min = -10
-        self.v_max = 10
+        self.v_min = -20
+        self.v_max = 150
         
         # Networks
         self.online_net = RainbowDQN(
@@ -229,6 +229,7 @@ class MarioAgent:
         target_dist = torch.zeros(self.batch_size, self.num_atoms, device=self.device)
         
         for i in range(self.batch_size):
+            # print(rewards[i])
             if dones[i]:
                 # Terminal state: all mass at reward
                 Tz = rewards[i].clamp(self.v_min, self.v_max)

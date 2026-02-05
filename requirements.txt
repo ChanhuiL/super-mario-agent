@@ -3,7 +3,7 @@ torchvision
 gymnasium
 git+https://github.com/Leirbag-gabrieL/gym-super-mario-bros-fixed.git
 git+https://github.com/Leirbag-gabrieL/nes-py-fixed.git
-numpy>=1.24.0
+numpy==1.24.0
 opencv-python>=4.8.0
 tensorboard>=2.14.0
 tqdm>=4.66.0

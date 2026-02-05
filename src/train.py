@@ -119,6 +119,8 @@ def train(
     print(f"Device: {agent.device}")
     print(f"Save directory: {save_dir}")
     print(f"Action space size: {num_actions}\n")
+
+    start_time = time.perf_counter()
     
     # Training loop
     for episode in range(1, num_episodes + 1):
@@ -130,6 +132,8 @@ def train(
         done = False
         episode_reward = 0
         episode_steps = 0
+        update_interval = 5
+        loss = 0
         
         while not done:
             # Select action
@@ -139,8 +143,10 @@ def train(
             next_obs, reward, terminated, truncated, info = env.step(action)
             next_frames = next_obs['frames']
             next_action_history = next_obs['action_history']
-
+            
             done = terminated or truncated
+            true_reward = reward
+            reward = np.sign(reward) * (np.sqrt(abs(reward) + 1) - 1) + 0.001 * reward
             
             # Store transition
             agent.store_transition(
@@ -149,7 +155,11 @@ def train(
             )
             
             # Learn
-            loss = agent.learn()
+            if update_interval > 0:
+                update_interval -= 1
+            else:
+                loss = agent.learn()
+                update_interval = 5
             
             # Get Q-value for logging
             with torch.no_grad():
@@ -159,7 +169,7 @@ def train(
                 max_q = q_values.max().item()
             
             # Log step
-            logger.log_step(reward, loss, max_q)
+            logger.log_step(true_reward, loss, max_q)
             
             # Update state
             frames = next_frames
@@ -178,12 +188,17 @@ def train(
         
         # Print progress
         if episode % log_interval == 0:
+            time_spent, start_time = (
+                time.perf_counter() - start_time,
+                time.perf_counter(),
+            )
             print(f"Episode {episode:5d} | "
                   f"Steps: {agent.steps:7d} | "
                   f"Reward: {ep_reward:6.1f} | "
                   f"Length: {ep_length:4d} | "
                   f"Avg Reward: {avg_reward:6.1f} | "
-                  f"Avg Loss: {avg_loss:.4f}")
+                  f"Avg Loss: {avg_loss:.4f} | "
+                  f"Time Spent: {time_spent:.4f}")
         
         # Save checkpoint
         if episode % save_interval == 0:
@@ -202,7 +217,7 @@ if __name__ == '__main__':
     config = {
         'num_episodes': 10000,
         'save_interval': 500,
-        'log_interval': 10,
+        'log_interval': 1,
         'device': 'cuda',
         'save_dir': './mario_runs'
     }

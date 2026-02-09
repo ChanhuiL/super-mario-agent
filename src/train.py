@@ -217,7 +217,7 @@ if __name__ == '__main__':
     config = {
         'num_episodes': 10000,
         'save_interval': 500,
-        'log_interval': 1,
+        'log_interval': 10,
         'device': 'cuda',
         'save_dir': './mario_runs'
     }

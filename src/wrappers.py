@@ -142,6 +142,7 @@ def create_mario_env(world=1, stage=1, version='Vanilla'):
     
     # Create the base environment
     env_name = f'SuperMarioBros-{world}-{stage}-{version}'
+    # env_name = f'SuperMarioBrosRandomStages-{version}-SmbOnly'
     env = gym_super_mario_bros.make(env_name)
     
     # Limit the action space to simple movements

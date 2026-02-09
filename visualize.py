@@ -182,8 +182,9 @@ Max Q-Value:
                 action = q_values_np.argmax()
             
             # Step environment
-            obs, reward, done, info = self.env.step(action)
-            
+            obs, reward, terminated, truncated, info = self.env.step(action)
+            done = terminated or truncated
+
             self.current_reward += reward
             self.current_step += 1
             
@@ -245,7 +246,7 @@ def main():
     
     # Create environment and agent
     print("\nInitializing environment and agent...")
-    env = create_mario_env(world=1, stage=1, version=0)
+    env = create_mario_env(world=1, stage=1, version="Vanilla")
     agent = MarioAgent(num_actions=7, device=args.device)
     agent.load(checkpoint_path)
     

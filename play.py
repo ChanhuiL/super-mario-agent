@@ -44,8 +44,9 @@ def play_episode(env, agent, render=True, record=False):
         action = agent.act(frames, action_history)
         
         # Step environment
-        obs, reward, done, info = env.step(action)
-        
+        obs, reward, terminated, truncated, info = env.step(action)
+        done = terminated or truncated
+
         total_reward += reward
         step += 1
         
@@ -105,7 +106,7 @@ def main():
     
     # Create environment
     print("\nInitializing environment...")
-    env = create_mario_env(world=args.world, stage=args.stage, version=0)
+    env = create_mario_env(world=args.world, stage=args.stage, version="Vanilla")
     
     # Get action space size
     # The action space is wrapped, so we need to get it from the base

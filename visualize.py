@@ -228,6 +228,10 @@ def main():
                         help='Number of episodes to visualize')
     parser.add_argument('--device', type=str, default='cuda',
                         help='Device to use (cuda/cpu)')
+    parser.add_argument('--world', type=int, default=1,
+                        help='World to use (1-8)')
+    parser.add_argument('--stage', type=int, default=1,
+                        help='Stage to use (1-4)')
     
     args = parser.parse_args()
     
@@ -246,7 +250,7 @@ def main():
     
     # Create environment and agent
     print("\nInitializing environment and agent...")
-    env = create_mario_env(world=1, stage=1, version="Vanilla")
+    env = create_mario_env(world=args.world, stage=args.stage, version="Vanilla")
     agent = MarioAgent(num_actions=7, device=args.device)
     agent.load(checkpoint_path)
     

@@ -9,6 +9,7 @@ from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from pathlib import Path
 import time
+import argparse
 
 from src.wrappers import create_mario_env
 from src.agent import MarioAgent
@@ -82,7 +83,8 @@ def train(
     save_interval=500,
     log_interval=10,
     device='cuda',
-    save_dir='./mario_runs'
+    save_dir='./mario_runs',
+    checkpoint_path=Path()
 ):
     """
     Main training loop.
@@ -111,6 +113,10 @@ def train(
         device=device,
         save_dir=save_dir / 'checkpoints'
     )
+
+    # Load agent if checkpoint path provided
+    if checkpoint_path != Path():
+        agent.load(path=checkpoint_path)
     
     # Initialize logger
     logger = MetricLogger(save_dir)
@@ -213,13 +219,24 @@ def train(
 
 
 if __name__ == '__main__':
-    # Training configuration
-    config = {
-        'num_episodes': 10000,
-        'save_interval': 500,
-        'log_interval': 10,
-        'device': 'cuda',
-        'save_dir': './mario_runs'
-    }
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--checkpoint', type=str, default='.',
+                        help='Path to checkpoint file')
+    args = parser.parse_args()
     
-    train(**config)
+    # Check checkpoint
+    checkpoint_path = Path(args.checkpoint)
+    if not checkpoint_path.exists():
+        print(f"Error: Checkpoint not found at {checkpoint_path}")
+    else:
+        # Training configuration
+        config = {
+            'num_episodes': 10000,
+            'save_interval': 500,
+            'log_interval': 10,
+            'device': 'cuda',
+            'save_dir': './mario_runs',
+            'checkpoint_path': checkpoint_path
+        }
+        train(**config)

@@ -234,8 +234,8 @@ class MarioAgent:
                 # Terminal state: all mass at reward
                 Tz = rewards[i].clamp(self.v_min, self.v_max)
                 b = (Tz - self.v_min) / delta_z
-                l = b.floor().long()
-                u = b.ceil().long()
+                l = b.floor().long().clamp(0, self.num_atoms - 1)
+                u = b.ceil().long().clamp(0, self.num_atoms - 1)
                 
                 target_dist[i, l] += (u - b)
                 target_dist[i, u] += (b - l)
@@ -245,8 +245,8 @@ class MarioAgent:
                     Tz = rewards[i] + self.gamma ** self.n_step * atoms[j]
                     Tz = Tz.clamp(self.v_min, self.v_max)
                     b = (Tz - self.v_min) / delta_z
-                    l = b.floor().long()
-                    u = b.ceil().long()
+                    l = b.floor().long().clamp(0, self.num_atoms - 1)
+                    u = b.ceil().long().clamp(0, self.num_atoms - 1)
                     
                     target_dist[i, l] += next_dist[i, j] * (u - b)
                     target_dist[i, u] += next_dist[i, j] * (b - l)
@@ -274,7 +274,7 @@ class MarioAgent:
         checkpoint = torch.load(path, map_location=self.device)
         self.online_net.load_state_dict(checkpoint['online_net'])
         self.target_net.load_state_dict(checkpoint['target_net'])
-        self.optimizer.load_state_dict(checkpoint['optimizer'])
+        # self.optimizer.load_state_dict(checkpoint['optimizer'])
         self.steps = checkpoint['steps']
         self.episodes = checkpoint['episodes']
         print(f'Loaded checkpoint from {path}')

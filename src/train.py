@@ -84,7 +84,9 @@ def train(
     log_interval=10,
     device='cuda',
     save_dir='./mario_runs',
-    checkpoint_path=Path()
+    checkpoint_path=Path(),
+    world=1,
+    level=1,
 ):
     """
     Main training loop.
@@ -103,7 +105,7 @@ def train(
     
     # Initialize environment
     print("Initializing environment...")
-    env = create_mario_env(world=1, stage=1, version='Vanilla')
+    env = create_mario_env(world=world, stage=level, version='Vanilla')
     num_actions = env.action_space.n  # Access the base action space
     
     # Initialize agent
@@ -121,7 +123,7 @@ def train(
     # Initialize logger
     logger = MetricLogger(save_dir)
     
-    print(f"\nStarting training for {num_episodes} episodes...")
+    print(f"\nStarting training {world}-{level} for {num_episodes} episodes...")
     print(f"Device: {agent.device}")
     print(f"Save directory: {save_dir}")
     print(f"Action space size: {num_actions}\n")
@@ -199,6 +201,7 @@ def train(
                 time.perf_counter(),
             )
             print(f"Episode {episode:5d} | "
+                  f"Level: {world}-{level} | "
                   f"Steps: {agent.steps:7d} | "
                   f"Reward: {ep_reward:6.1f} | "
                   f"Length: {ep_length:4d} | "
@@ -223,6 +226,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--checkpoint', type=str, default='.',
                         help='Path to checkpoint file')
+    parser.add_argument('--world', type=int, default='1',
+                        help='World to train')
+    parser.add_argument('--level', type=int, default='1',
+                        help='Level to train')
     args = parser.parse_args()
     
     # Check checkpoint
@@ -237,6 +244,8 @@ if __name__ == '__main__':
             'log_interval': 10,
             'device': 'cuda',
             'save_dir': './mario_runs',
-            'checkpoint_path': checkpoint_path
+            'checkpoint_path': checkpoint_path,
+            'world': args.world,
+            'level': args.level
         }
         train(**config)

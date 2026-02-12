@@ -223,33 +223,27 @@ class MarioAgent:
             target_dist: (batch, num_atoms)
         """
         atoms = self.online_net.atoms
-        delta_z = (self.v_max - self.v_min) / (self.num_atoms - 1)
         
         # Compute projected distribution
         target_dist = torch.zeros(self.batch_size, self.num_atoms, device=self.device)
+
+        rewards = rewards.unsqueeze(1)
+        dones = dones.unsqueeze(1).float()
+        gamma_eff = self.gamma ** self.n_step * (1-dones)
+        Tz = rewards + gamma_eff * atoms.unsqueeze(0)
+        Tz = Tz.clamp(self.v_min, self.v_max)
+
+        delta_z = (self.v_max - self.v_min) / (self.num_atoms - 1)
+        b = (Tz - self.v_min) / delta_z
+        l = b.floor().long().clamp(0, self.num_atoms - 1)
+        u = b.ceil().long().clamp(0, self.num_atoms - 1)
+
+        target_dist = torch.zeros(self.batch_size, self.num_atoms, device=self.device)
         
-        for i in range(self.batch_size):
-            # print(rewards[i])
-            if dones[i]:
-                # Terminal state: all mass at reward
-                Tz = rewards[i].clamp(self.v_min, self.v_max)
-                b = (Tz - self.v_min) / delta_z
-                l = b.floor().long().clamp(0, self.num_atoms - 1)
-                u = b.ceil().long().clamp(0, self.num_atoms - 1)
-                
-                target_dist[i, l] += (u - b)
-                target_dist[i, u] += (b - l)
-            else:
-                # Non-terminal: project distribution
-                for j in range(self.num_atoms):
-                    Tz = rewards[i] + self.gamma ** self.n_step * atoms[j]
-                    Tz = Tz.clamp(self.v_min, self.v_max)
-                    b = (Tz - self.v_min) / delta_z
-                    l = b.floor().long().clamp(0, self.num_atoms - 1)
-                    u = b.ceil().long().clamp(0, self.num_atoms - 1)
-                    
-                    target_dist[i, l] += next_dist[i, j] * (u - b)
-                    target_dist[i, u] += next_dist[i, j] * (b - l)
+        offset = torch.linspace(0, (self.batch_size-1) * self.num_atoms, self.batch_size, device=self.device).long().unsqueeze(1)
+
+        target_dist.view(-1).index_add_(0, (l + offset).view(-1), (next_dist * (u.float() - b)).view(-1))
+        target_dist.view(-1).index_add_(0, (u + offset).view(-1), (next_dist * (b - l.float())).view(-1))
         
         return target_dist
 
@@ -274,6 +268,7 @@ class MarioAgent:
         checkpoint = torch.load(path, map_location=self.device)
         self.online_net.load_state_dict(checkpoint['online_net'])
         self.target_net.load_state_dict(checkpoint['target_net'])
+        self.optimizer = optim.Adam(self.online_net.parameters(), lr=self.lr)
         # self.optimizer.load_state_dict(checkpoint['optimizer'])
         self.steps = checkpoint['steps']
         self.episodes = checkpoint['episodes']

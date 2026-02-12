@@ -86,7 +86,7 @@ def train(
     save_dir='./mario_runs',
     checkpoint_path=Path(),
     world=1,
-    level=1,
+    stage=1,
 ):
     """
     Main training loop.
@@ -105,7 +105,7 @@ def train(
     
     # Initialize environment
     print("Initializing environment...")
-    env = create_mario_env(world=world, stage=level, version='Vanilla')
+    env = create_mario_env(world=world, stage=stage, version='Vanilla')
     num_actions = env.action_space.n  # Access the base action space
     
     # Initialize agent
@@ -123,7 +123,7 @@ def train(
     # Initialize logger
     logger = MetricLogger(save_dir)
     
-    print(f"\nStarting training {world}-{level} for {num_episodes} episodes...")
+    print(f"\nStarting training {world}-{stage} for {num_episodes} episodes...")
     print(f"Device: {agent.device}")
     print(f"Save directory: {save_dir}")
     print(f"Action space size: {num_actions}\n")
@@ -201,7 +201,7 @@ def train(
                 time.perf_counter(),
             )
             print(f"Episode {episode:5d} | "
-                  f"Level: {world}-{level} | "
+                  f"Level: {world}-{stage} | "
                   f"Steps: {agent.steps:7d} | "
                   f"Reward: {ep_reward:6.1f} | "
                   f"Length: {ep_length:4d} | "
@@ -228,8 +228,8 @@ if __name__ == '__main__':
                         help='Path to checkpoint file')
     parser.add_argument('--world', type=int, default='1',
                         help='World to train')
-    parser.add_argument('--level', type=int, default='1',
-                        help='Level to train')
+    parser.add_argument('--stage', type=int, default='1',
+                        help='Stage to train')
     args = parser.parse_args()
     
     # Check checkpoint
@@ -241,11 +241,11 @@ if __name__ == '__main__':
         config = {
             'num_episodes': 10000,
             'save_interval': 500,
-            'log_interval': 10,
+            'log_interval': 1,
             'device': 'cuda',
             'save_dir': './mario_runs',
             'checkpoint_path': checkpoint_path,
             'world': args.world,
-            'level': args.level
+            'stage': args.stage
         }
         train(**config)

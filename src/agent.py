@@ -33,7 +33,7 @@ class MarioAgent:
         self.batch_size = 32
         self.lr = 0.00025
         self.target_update_freq = 10000  # Update target network every N steps
-        self.learning_starts = 50000  # Start learning after N steps
+        self.learning_starts = 10000  # Start learning after N steps
         self.n_step = 3  # Multi-step returns
         
         # Distributional RL parameters
@@ -231,6 +231,7 @@ class MarioAgent:
         dones = dones.unsqueeze(1).float()
         gamma_eff = self.gamma ** self.n_step * (1-dones)
         Tz = rewards + gamma_eff * atoms.unsqueeze(0)
+        # print(Tz)
         Tz = Tz.clamp(self.v_min, self.v_max)
 
         delta_z = (self.v_max - self.v_min) / (self.num_atoms - 1)
@@ -268,8 +269,8 @@ class MarioAgent:
         checkpoint = torch.load(path, map_location=self.device)
         self.online_net.load_state_dict(checkpoint['online_net'])
         self.target_net.load_state_dict(checkpoint['target_net'])
-        self.optimizer = optim.Adam(self.online_net.parameters(), lr=self.lr)
-        # self.optimizer.load_state_dict(checkpoint['optimizer'])
+        # self.optimizer = optim.Adam(self.online_net.parameters(), lr=self.lr)
+        self.optimizer.load_state_dict(checkpoint['optimizer'])
         self.steps = checkpoint['steps']
         self.episodes = checkpoint['episodes']
         print(f'Loaded checkpoint from {path}')

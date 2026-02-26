@@ -33,6 +33,8 @@ class MetricLogger:
         self.moving_avg_ep_rewards = []
         self.moving_avg_ep_lengths = []
         
+        self.moving_clear_rate = []
+        
     def log_step(self, reward, loss, q_value):
         """Log step-level metrics."""
         self.ep_rewards.append(reward)
@@ -41,7 +43,7 @@ class MetricLogger:
         if q_value is not None:
             self.ep_avg_q_values.append(q_value)
     
-    def log_episode(self, episode, steps, epsilon=None):
+    def log_episode(self, episode, steps, cleared, epsilon=None):
         """Log episode-level metrics."""
         ep_reward = sum(self.ep_rewards)
         ep_length = len(self.ep_rewards)
@@ -54,9 +56,15 @@ class MetricLogger:
         if len(self.moving_avg_ep_rewards) > 100:
             self.moving_avg_ep_rewards.pop(0)
             self.moving_avg_ep_lengths.pop(0)
+
+        self.moving_clear_rate.append(cleared)
+        if len(self.moving_clear_rate) > 100:
+            self.moving_clear_rate.pop(0)
         
         avg_reward = np.mean(self.moving_avg_ep_rewards)
         avg_length = np.mean(self.moving_avg_ep_lengths)
+
+        clear_rate = np.sum(self.moving_clear_rate) / len(self.moving_clear_rate) * 100
         
         # Write to TensorBoard
         self.writer.add_scalar('Episode/Reward', ep_reward, episode)
@@ -65,6 +73,7 @@ class MetricLogger:
         self.writer.add_scalar('Episode/Average_Q', ep_avg_q, episode)
         self.writer.add_scalar('Episode/Moving_Avg_Reward', avg_reward, episode)
         self.writer.add_scalar('Episode/Moving_Avg_Length', avg_length, episode)
+        self.writer.add_scalar('Episode/Moving_Clear_rate', clear_rate, episode)
         
         if epsilon is not None:
             self.writer.add_scalar('Train/Epsilon', epsilon, episode)
@@ -75,7 +84,7 @@ class MetricLogger:
         self.ep_avg_losses.clear()
         self.ep_avg_q_values.clear()
         
-        return ep_reward, ep_length, avg_reward, avg_length, ep_avg_loss
+        return ep_reward, ep_length, avg_reward, avg_length, ep_avg_loss, clear_rate
 
 
 def train(
@@ -99,7 +108,7 @@ def train(
         save_dir: Directory to save checkpoints and logs
     """
     # Create save directory with timestamp
-    timestamp = time.strftime('%Y%m%d_%H%M%S')
+    timestamp = time.strftime('%Y%m%d_%H%M%S') + f"_{world}-{stage}"
     save_dir = Path(save_dir) / timestamp
     save_dir.mkdir(parents=True, exist_ok=True)
     
@@ -118,7 +127,7 @@ def train(
 
     # Load agent if checkpoint path provided
     if checkpoint_path != Path():
-        agent.load(path=checkpoint_path)
+        agent.load(checkpoint_path)
     
     # Initialize logger
     logger = MetricLogger(save_dir)
@@ -192,7 +201,8 @@ def train(
         
         # Log episode
         agent.episodes = episode
-        ep_reward, ep_length, avg_reward, avg_length, avg_loss = logger.log_episode(episode, agent.steps)
+        cleared = True if env.unwrapped._flag_get else False
+        ep_reward, ep_length, avg_reward, avg_length, avg_loss, clear_rate = logger.log_episode(episode, agent.steps, cleared)
         
         # Print progress
         if episode % log_interval == 0:
@@ -207,6 +217,8 @@ def train(
                   f"Length: {ep_length:4d} | "
                   f"Avg Reward: {avg_reward:6.1f} | "
                   f"Avg Loss: {avg_loss:.4f} | "
+                  f"Cleared: {'Y' if cleared else 'N'} | "
+                  f"Clear Rate: {clear_rate:.2f}% | "
                   f"Time Spent: {time_spent:.4f}")
         
         # Save checkpoint

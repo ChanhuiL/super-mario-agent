@@ -164,7 +164,8 @@ Max Q-Value:
         self.current_step = 0
         self.episode_num += 1
         
-        self.agent.online_net.eval()
+        # self.agent.online_net.eval()
+        self.agent.online_net.reset_noise()
         
         print(f"\nStarting Episode {self.episode_num}...")
         
@@ -177,6 +178,7 @@ Max Q-Value:
             with torch.no_grad():
                 frames_t = torch.FloatTensor(frames).unsqueeze(0).to(self.agent.device) / 255.0
                 ah_t = torch.LongTensor(action_history).unsqueeze(0).to(self.agent.device)
+                self.agent.online_net.reset_noise()
                 q_values, _ = self.agent.online_net(frames_t, ah_t)
                 q_values_np = q_values.cpu().numpy()[0]
                 action = q_values_np.argmax()
@@ -217,7 +219,7 @@ Max Q-Value:
                 print("\nStopping visualization...")
                 break
         
-        plt.show()
+        # plt.show()
 
 
 def main():
